@@ -1,6 +1,7 @@
 ---
 title: 面向高反射表面的相位恢复：Y-FFC 网络工程记录
 date: 2026-08-04 10:05:00
+permalink: /2026/08/04/yffc-high-reflectance-reconstruction/
 tags: [深度学习, 结构光, 高反射表面, 相位恢复, 视觉计算系列]
 categories: [视觉计算]
 ---

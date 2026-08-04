@@ -1,6 +1,7 @@
 ---
 title: 频移法中的相位解码与三角化：从频域峰值到三维点
 date: 2026-08-04 10:10:00
+permalink: /2026/08/04/frequency-shift-phase-reconstruction/
 tags: [频移法, FFT, 相位解包裹, OpenCV, 三维重建, 视觉计算系列]
 categories: [视觉计算]
 ---

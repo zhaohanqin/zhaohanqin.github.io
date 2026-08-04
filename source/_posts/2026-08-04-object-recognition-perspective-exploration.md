@@ -1,6 +1,7 @@
 ---
 title: 目标分割与透视矫正：面向复杂视角的视觉工程探索
 date: 2026-08-04 10:25:00
+permalink: /2026/08/04/object-recognition-perspective-exploration/
 tags: [目标分割, YOLO, 透视变换, 视频分析, Python, 视觉计算系列]
 categories: [视觉计算]
 ---

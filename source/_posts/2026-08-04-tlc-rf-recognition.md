@@ -1,6 +1,7 @@
 ---
 title: 从 TLC 图像到 Rf：薄层色谱自动分析流程
 date: 2026-08-04 10:15:00
+permalink: /2026/08/04/tlc-rf-recognition/
 tags: [计算机视觉, YOLO, 图像测量, TLC, Rf, 视觉计算系列]
 categories: [视觉计算]
 ---

@@ -1,6 +1,7 @@
 ---
 title: 从标定到点云：结构光三维重建的工程流程
 date: 2026-08-04 10:00:00
+permalink: /2026/08/04/structured-light-3d-reconstruction/
 tags: [结构光, 三维重建, 相机标定, 相位解包裹, 视觉计算系列]
 categories: [视觉计算]
 ---

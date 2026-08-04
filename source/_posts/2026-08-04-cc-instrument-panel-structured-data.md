@@ -1,6 +1,7 @@
 ---
 title: 把仪表截图转成结构化数据：可配置视觉解析管线
 date: 2026-08-04 10:20:00
+permalink: /2026/08/04/cc-instrument-panel-structured-data/
 tags: [工业视觉, OCR, 图像分割, 数据提取, Python, 视觉计算系列]
 categories: [视觉计算]
 ---
