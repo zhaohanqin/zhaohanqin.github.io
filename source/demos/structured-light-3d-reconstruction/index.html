@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="结构光三维重建系统的中文静态交互展示：查看双目标定、相位解码、三角化和点云输出流程。">
+  <title>结构光三维重建系统｜项目交互展示</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">ZHAOHANQIN / PROJECT LAB</a>
+    <a class="article-link" href="/2026/08/04/structured-light-3d-reconstruction/">阅读完整技术文章 <span aria-hidden="true">→</span></a>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div class="intro-copy">
+        <p class="kicker">STRUCTURED LIGHT / 结构光视觉</p>
+        <h1 id="page-title">结构光三维重建系统</h1>
+        <p class="lead">从标定图和多频相移条纹出发，恢复绝对相位与像素对应，再通过标定几何得到深度和点云。</p>
+      </div>
+      <dl class="project-facts">
+        <div><dt>输入</dt><dd>标定图、左右条纹序列</dd></div>
+        <div><dt>核心</dt><dd>标定、相位展开、三角化</dd></div>
+        <div><dt>输出</dt><dd>深度图、有效掩码、PLY 点云</dd></div>
+      </dl>
+      <p class="truth-note"><strong>演示边界：</strong>这是基于真实 PyQt5 界面的静态交互讲解页，不上传图像、不调用模型，也不在浏览器中生成重建结果。</p>
+    </section>
+
+    <section class="workbench" aria-labelledby="workbench-title">
+      <div class="workbench-head">
+        <div>
+          <p class="section-index">01 / 操作流程</p>
+          <h2 id="workbench-title">选择一条工作路径</h2>
+        </div>
+        <div class="mode-switch" role="tablist" aria-label="工作路径">
+          <button type="button" role="tab" aria-selected="true" data-mode="calibration">双目标定</button>
+          <button type="button" role="tab" aria-selected="false" data-mode="reconstruction">三维重建</button>
+        </div>
+      </div>
+
+      <div class="workbench-grid">
+        <nav class="stage-nav" aria-label="流程阶段"></nav>
+        <article class="stage-detail" aria-live="polite">
+          <p class="stage-number"></p>
+          <h3 class="stage-title"></h3>
+          <p class="stage-purpose"></p>
+          <div class="io-grid">
+            <section><h4>需要准备</h4><ul class="stage-inputs"></ul></section>
+            <section><h4>系统处理</h4><ul class="stage-actions"></ul></section>
+            <section><h4>得到什么</h4><ul class="stage-outputs"></ul></section>
+          </div>
+          <p class="stage-check"></p>
+        </article>
+      </div>
+    </section>
+
+    <section class="ui-inspector" aria-labelledby="ui-title">
+      <div class="section-copy">
+        <p class="section-index">02 / 真实界面</p>
+        <h2 id="ui-title">代码中的桌面应用长什么样</h2>
+        <p>下图由仓库中的 v4.1 程序真实启动后获取。截图仅把源码默认的本机绝对路径替换为相对示例路径，没有触发标定或重建。</p>
+      </div>
+      <figure class="ui-figure">
+        <img class="ui-image" src="./assets/真实界面-双目标定.png" alt="结构光三维重建系统的双目标定界面">
+        <figcaption>
+          <strong class="figure-title">双目标定</strong>
+          <span class="figure-caption">左侧配置输入与标定板，右侧查看角点或重投影误差。</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="pipeline" aria-labelledby="pipeline-title">
+      <div class="section-copy">
+        <p class="section-index">03 / 数据如何变化</p>
+        <h2 id="pipeline-title">从图像到点云的八个阶段</h2>
+      </div>
+      <ol class="pipeline-list">
+        <li><span>01</span><strong>采集</strong><p>获得左右标定图和水平/垂直多频相移序列。</p></li>
+        <li><span>02</span><strong>标定</strong><p>求内参、畸变和左右相机相对位姿。</p></li>
+        <li><span>03</span><strong>包裹相位</strong><p>N 步相移消除背景亮度并得到周期内相位。</p></li>
+        <li><span>04</span><strong>绝对相位</strong><p>三频外差恢复条纹周期编号。</p></li>
+        <li><span>05</span><strong>有效掩码</strong><p>按调制度、强度和相位质量排除不可靠像素。</p></li>
+        <li><span>06</span><strong>像素对应</strong><p>左右绝对相位建立同一表面点的匹配。</p></li>
+        <li><span>07</span><strong>三角化</strong><p>用标定几何把像素对应转换成深度。</p></li>
+        <li><span>08</span><strong>点云输出</strong><p>深度裁剪与邻域过滤后写出 PLY。</p></li>
+      </ol>
+    </section>
+
+    <section class="evidence" aria-labelledby="evidence-title">
+      <div>
+        <p class="section-index">04 / 证据边界</p>
+        <h2 id="evidence-title">目前能展示什么，不能证明什么</h2>
+      </div>
+      <div class="evidence-columns">
+        <section>
+          <h3>已经核验</h3>
+          <ul><li>双目标定与重建 UI 的真实控件和操作路径</li><li>多步相移、三频展开、三角化和三级过滤代码</li><li>标定文本、相位/深度诊断和 PLY 输出接口</li></ul>
+        </section>
+        <section>
+          <h3>尚不能宣称</h3>
+          <ul><li>某个真实物体已经在当前提交成功重建</li><li>点云精度、速度、鲁棒性或硬件适配范围</li><li>不存在的输入图、深度图或点云截图</li></ul>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>结构光三维重建系统 · 静态项目展示</p>
+    <a href="/2026/08/04/structured-light-3d-reconstruction/">查看原理、公式和实现细节</a>
+  </footer>
+  <script src="./app.js"></script>
+</body>
+</html>
