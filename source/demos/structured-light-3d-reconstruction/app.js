@@ -1,4 +1,16 @@
 const modes = {
+  single: {
+    image: '',
+    alt: '单目相机-投影仪结构光系统界面结构',
+    title: '单目主链',
+    caption: '根据仓库 v3.1 单目标定页整理的界面结构：相机标定、投影仪标定和联合姿态估计在同一页完成。',
+    stages: [
+      { title:'采集标定姿态', purpose:'让相机看到标定板，同时让投影条纹覆盖标定板。', inputs:['多组标定板白光图','每组 3 个频率 × 4 步的水平/垂直条纹'], actions:['检测圆点中心','按频率和方向分组'], outputs:['标定板三维点与相机像素对应'], check:'检查重点：每个姿态的条纹顺序必须一致，水平和垂直方向不能混组。' },
+      { title:'相机与投影仪标定', purpose:'相机角点提供几何尺度，绝对相位把同一点映射到 DLP 像素。', inputs:['标定板物点','相机角点','角点处绝对相位'], actions:['张正友单目标定','单位复数相位插值','投影仪逆相机标定','联合求 R、t'], outputs:['Kc、Kp、畸变、R、t、重投影误差'], check:'检查重点：投影仪不能直接检测角点，必须先通过绝对相位得到投影仪像素。' },
+      { title:'物体条纹解码', purpose:'把物体表面每个相机像素转换成投影仪平面坐标。', inputs:['h1..h12、v1..v12 条纹图','相移步数 N=4','频率 81/72/64'], actions:['四步相移求包裹相位','9/8/1 差频外差','生成调制度和质量掩码'], outputs:['水平/垂直绝对相位','投影仪坐标 up、vp'], check:'可视化重点：包裹相位在 2π 处跳变，绝对相位应沿条纹方向连续。' },
+      { title:'单目三维重建', purpose:'用相机射线和投影仪射线的交会恢复三维坐标。', inputs:['相机像素','投影仪像素','Kc、Kp、R、t'], actions:['去畸变','构造 Pc/Pp','批量三角化','深度与邻域过滤'], outputs:['深度图','有效掩码','过滤后 PLY 点云'], check:'完成标志：深度图、相位诊断图和点云文件同时写出。' }
+    ]
+  },
   calibration: {
     image: './assets/真实界面-双目标定.png',
     alt: '结构光三维重建系统的双目标定界面',
@@ -20,7 +32,7 @@ const modes = {
       { title:'加载标定和条纹', purpose:'把几何参数与左右相机采集的相移序列放入同一任务。', inputs:['双目标定结果','左右条纹目录','h1/h2…、v1/v2… 命名序列'], actions:['读取参数','按方向/频率/相移步排序'], outputs:['左右水平/垂直图像栈'], check:'检查重点：左右目录内不要再加 left/right 文件名前缀，图像序列必须完整。' },
       { title:'恢复绝对相位', purpose:'先计算周期内相位，再利用多频关系找回周期编号。', inputs:['N 步相移图','频率列表','调制度和强度阈值'], actions:['正余弦累积','三频外差展开','构造质量掩码'], outputs:['左右水平/垂直绝对相位','有效点掩码'], check:'可视化重点：相位应连续，低调制度、过曝和遮挡区域应被掩码排除。' },
       { title:'建立对应并三角化', purpose:'通过左右相机观测到的相位值匹配同一表面点。', inputs:['左右绝对相位','双目标定几何','深度范围'], actions:['相位对应','射线三角化','深度范围裁剪'], outputs:['深度图','初始三维点集'], check:'检查重点：错误标定、方向错配或频率配置不一致会直接造成深度异常。' },
-      { title:'过滤并保存点云', purpose:'去除孤立噪声，形成可交付的 PLY。', inputs:['初始点云','统计邻域/标准差','半径与最少邻点'], actions:['统计离群点过滤','半径离群点过滤','写出 PLY'], outputs:['过滤后 pointCloud.ply','深度和点云诊断'], check:'证据边界：仓库固定提交未附真实 PLY，本页只解释输出路径，不展示虚构点云。' }
+      { title:'过滤并保存点云', purpose:'去除孤立噪声，形成可交付的 PLY。', inputs:['初始点云','统计邻域/标准差','半径与最少邻点'], actions:['统计离群点过滤','半径离群点过滤','写出 PLY'], outputs:['过滤后 pointCloud.ply','深度和点云诊断'], check:'完成标志：保留过滤前、过滤后和体素下采样三个阶段，便于回看点数变化。' }
     ]
   }
 };
@@ -49,6 +61,11 @@ function renderStage() {
   listInto('.stage-outputs', stage.outputs);
   document.querySelector('.stage-check').textContent = stage.check;
   document.querySelector('.ui-image').src = mode.image;
+  const preview = document.querySelector('.single-ui-preview');
+  const image = document.querySelector('.ui-image');
+  const isSingle = activeMode === 'single';
+  image.hidden = isSingle;
+  preview.hidden = !isSingle;
   document.querySelector('.ui-image').alt = mode.alt;
   document.querySelector('.figure-title').textContent = mode.title;
   document.querySelector('.figure-caption').textContent = mode.caption;

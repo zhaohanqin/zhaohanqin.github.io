@@ -77,6 +77,20 @@ h2 { margin: 0; font-size: 32px; line-height: 1.25; letter-spacing: 0; }
 .ui-figure figcaption { margin-top: 20px; display: flex; justify-content: space-between; gap: 24px; }
 .figure-title { color: var(--accent); }
 .figure-caption { color: var(--muted); text-align: right; }
+.single-ui-preview { border: 1px solid #d7dee8; background: #f4f7fa; color: #1d2a36; min-height: 360px; font-size: .88rem; }
+.single-ui-titlebar, .single-ui-tabs, .single-ui-body { display: flex; align-items: center; }
+.single-ui-titlebar { justify-content: space-between; padding: .8rem 1rem; background: #233746; color: #f6fafc; font-weight: 700; }
+.single-ui-status { color: #a9e3d4; font-size: .75rem; }
+.single-ui-tabs { gap: 1.25rem; padding: .65rem 1rem 0; background: #e8eef3; }
+.single-ui-tabs span { padding: .55rem .7rem; border-bottom: 2px solid transparent; color: #637487; }
+.single-ui-tabs .is-active { border-color: #148a83; color: #17665f; font-weight: 700; }
+.single-ui-body { align-items: stretch; gap: 1rem; padding: 1rem; }
+.single-ui-form, .single-ui-preview-panel { flex: 1; display: grid; gap: .7rem; padding: .9rem; background: #fff; border: 1px solid #dbe3eb; }
+.single-ui-form label { display: grid; gap: .25rem; color: #607080; font-size: .76rem; }
+.single-ui-form input { width: 100%; box-sizing: border-box; border: 1px solid #cbd6df; padding: .5rem .6rem; color: #273745; background: #f8fafb; }
+.single-ui-row { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+.single-ui-action { border: 0; padding: .65rem .8rem; color: #fff; background: #148a83; font-weight: 700; }
+.single-ui-preview-panel span { display: block; padding: .55rem .65rem; background: #eef6f5; color: #246960; }
 
 .pipeline { padding-top: 70px; padding-bottom: 76px; border-top: 1px solid var(--line); }
 .pipeline-list { margin: 32px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); list-style: none; border-top: 2px solid var(--ink); border-left: 1px solid var(--line); }
@@ -112,6 +126,8 @@ footer a { color: var(--accent); font-weight: 700; }
   .pipeline-list { grid-template-columns: repeat(2, 1fr); }
   .ui-figure figcaption { flex-direction: column; gap: 5px; }
   .figure-caption { text-align: left; }
+  .single-ui-body { flex-direction: column; }
+  .single-ui-row { grid-template-columns: 1fr; }
   footer { align-items: flex-start; flex-direction: column; justify-content: center; }
 }
 

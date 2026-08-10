@@ -6,3 +6,12 @@ node_modules/
 public/
 .deploy*/
 _multiconfig.yml
+
+# 博客工作台（内部资料，不进入公开博客仓库）
+/docs/
+/knowledge-graphs/
+/notes/
+/projects/
+/skills/
+/tools/
+/工作区说明.md

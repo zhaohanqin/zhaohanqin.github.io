@@ -4,6 +4,7 @@ date: 2026-08-04 10:00:00
 permalink: /2026/08/04/structured-light-3d-reconstruction/
 tags: [结构光, 三维重建, 张正友标定, 相位解包裹, OpenCV, Open3D]
 categories: [视觉计算]
+mathjax: true
 ---
 
 这个仓库实现的是一个可以完整运行的结构光三维测量系统。它包含两条实现链路：主链路是“单相机 + 单投影仪”的标准面结构光系统，另一条是“左右双相机”的双目结构光分支。两条链路共享条纹编码、相移解码、绝对相位和点云后处理，但标定对象和三角化几何不同。本文先讲清楚项目真正解决的问题，再沿着代码和真实输出解释每一步。
@@ -16,7 +17,7 @@ categories: [视觉计算]
 
 | 链路 | 标定对象 | 对应关系 | 三角化输入 | 代码目录 |
 |---|---|---|---|---|
-| 标准单目结构光 | 相机、投影仪、相机-投影仪相对姿态 | 相机像素 `(u_c,v_c)` ↔ 投影仪像素 `(u_p,v_p)` | 两台“成像设备”的投影矩阵 | `结构光流程/` |
+| 标准单目结构光 | 相机、投影仪、相机-投影仪相对姿态 | 相机像素 \( (u_c,v_c) \) ↔ 投影仪像素 \( (u_p,v_p) \) | 两台“成像设备”的投影矩阵 | `结构光流程/` |
 | 双目结构光 | 左相机、右相机及双目标定 | 左相机像素 ↔ 右相机像素（两侧各自解相） | 左右相机投影矩阵 | `双目结构光三维重建/` |
 
 两条链路的共同数据流是：
@@ -36,59 +37,53 @@ categories: [视觉计算]
 - Open3D：统计离群点、半径离群点、体素下采样和 PLY 写出。
 - 条纹配置：每个方向 3 个频率 `81、72、64`，每个频率 4 步相移；水平和垂直共 24 张条纹图。
 
-本次文章使用的结果证据来自用户授权的本地结果包 `E:\code\结构光代码`，输入图像目录为用户指定的 `E:\images\PSM\2`。文章中的图像均由该结果包复制或由其 PLY 派生，不是手绘示意结果。
+文章下文展示标定、相位、质量和深度输出，重点放在读者可以复用的原理、数据流和实现接口。
 
 ## 3. 相机标定：张正友方法如何落到代码
 
 ### 3.1 平面标定板与成像模型
 
-令标定板平面为 `Z=0`，板上角点为 `M_i=(X_i,Y_i,0,1)^T`，图像角点为 `m_i=(u_i,v_i,1)^T`。针孔模型为：
+令标定板平面为 \(Z=0\)，板上角点为 \(M_i=(X_i,Y_i,0,1)^T\)，图像角点为 \(m_i=(u_i,v_i,1)^T\)。针孔模型为：
 
-```text
-s [u v 1]^T = K [R | t] [X Y Z 1]^T
-K = [[fx, 0, cx], [0, fy, cy], [0, 0, 1]]
-```
+$$
+s[u,v,1]^T=K[R\mid t][X,Y,Z,1]^T,\qquad
+K=\left[\begin{array}{ccc}f_x&0&c_x\cr0&f_y&c_y\cr0&0&1\end{array}\right]。
+$$
 
-因为 `Z=0`，每个视图都可以写成单应性：
+因为 \(Z=0\)，每个视图都可以写成单应性：
 
-```text
-s m = H [X Y 1]^T,    H = [h1 h2 h3] = K [r1 r2 t]
-```
+$$
+s\,m=H[X,Y,1]^T,\qquad H=[h_1\ h_2\ h_3]=K[r_1\ r_2\ t]。
+$$
 
 ### 3.2 张正友标定的约束和优化
 
-设 `B=K^{-T}K^{-1}`。旋转矩阵列向量满足正交和等范数，因此每一幅图提供两条约束：
+设 \(B=K^{-T}K^{-1}\)。旋转矩阵列向量满足正交和等范数，因此每一幅图提供两条约束：
 
-```text
-h1^T B h2 = 0
-h1^T B h1 - h2^T B h2 = 0
-```
+$$h_1^TBh_2=0,\qquad h_1^TBh_1-h_2^TBh_2=0。$$
 
-收集多幅不同姿态的 `H` 后，线性求解 `B`，再恢复焦距、主点等内参。对每个视图：
+收集多幅不同姿态的 \(H\) 后，线性求解 \(B\)，再恢复焦距、主点等内参。对每个视图：
 
-```text
-r1 = λ K^-1 h1,  r2 = λ K^-1 h2,
-r3 = r1 × r2,    t  = λ K^-1 h3
-```
+$$r_1=\lambda K^{-1}h_1,\quad r_2=\lambda K^{-1}h_2,\quad r_3=r_1\times r_2,\quad t=\lambda K^{-1}h_3。$$
 
 实际程序随后进入非线性优化，最小化所有角点的重投影误差：
 
-```text
-min Σ || m_ij - project(K, dist, R_j, t_j, M_i) ||²
-```
+$$\min_{K,\,d,\,R_j,\,t_j}\sum_{i,j}\left\|m_{ij}-\operatorname{project}(K,d,R_j,t_j,M_i)\right\|_2^2。$$
 
 畸变模型包含径向和切向项：
 
-```text
-x_d = x(1+k1 r²+k2 r⁴) + 2p1xy + p2(r²+2x²)
-y_d = y(1+k1 r²+k2 r⁴) + p1(r²+2y²) + 2p2xy
-```
+$$
+\begin{aligned}
+x_d&=x(1+k_1r^2+k_2r^4)+2p_1xy+p_2(r^2+2x^2),\cr
+y_d&=y(1+k_1r^2+k_2r^4)+p_1(r^2+2y^2)+2p_2xy。
+\end{aligned}
+$$
 
 代码中的 `cv2.calibrateCamera(..., CALIB_FIX_K3)` 正是这一流程的工程实现：检测圆点中心，按真实点间距生成 `world_points`，逐视图求姿态，再输出 `K_c`、畸变和重投影误差。
 
 ### 3.3 本项目的相机标定结果
 
-来自 `E:\code\结构光代码\标定结果.txt` 的一次保存结果：
+项目保存的一组标定结果：
 
 | 参数 | 数值 |
 |---|---:|
@@ -109,18 +104,18 @@ y_d = y(1+k1 r²+k2 r⁴) + p1(r²+2y²) + 2p2xy
   └─ 角点处绝对相位 → (u_p,v_p)
 ```
 
-对于水平/垂直绝对相位 `φ_x、φ_y`，投影仪分辨率为 `W_p×H_p` 时：
+对于水平/垂直绝对相位 \(\phi_x、\phi_y\)，投影仪分辨率为 \(W_p\times H_p\) 时：
 
-```text
-u_p = φ_x/(2π) · W_p
-v_p = φ_y/(2π) · H_p
-```
+$$u_p=\frac{\phi_x}{2\pi}W_p,\qquad v_p=\frac{\phi_y}{2\pi}H_p。$$
 
-代码在采样时先插值 `exp(iφ)` 的实部和虚部，再用 `angle` 恢复相位，避免 `0` 与 `2π` 处直接线性插值造成跳变。得到 `(M_i,u_p,v_p)` 后，对投影仪重复同样的张正友标定，得到 `K_p` 和投影仪畸变；最后用：
+代码在采样时先插值 \(\exp(i\phi)\) 的实部和虚部，再用 `angle` 恢复相位，避免 \(0\) 与 \(2\pi\) 处直接线性插值造成跳变。得到 \((M_i,u_p,v_p)\) 后，对投影仪重复同样的张正友标定，得到 \(K_p\) 和投影仪畸变；最后用：
 
-```text
-cv2.stereoCalibrate(object_points, camera_points, projector_points,
-                     K_c, d_c, K_p, d_p, ...)
+```python
+cv2.stereoCalibrate(
+    object_points, camera_points, projector_points,
+    K_c, d_c, K_p, d_p, image_size, R, t,
+    flags=cv2.CALIB_FIX_INTRINSIC
+)
 ```
 
 联合求解相机到投影仪的 `R,t`。本项目还会按投影仪重投影误差剔除异常视图，再在保守和精细两种联合标定结果之间选择误差更稳定的一组。
@@ -131,22 +126,21 @@ cv2.stereoCalibrate(object_points, camera_points, projector_points,
 
 ### 5.1 四步相移求包裹相位
 
-固定像素的第 `n` 张图满足：
+固定像素的第 \(n\) 张图满足：
 
-```text
-I_n(x,y) = A(x,y) + B(x,y) cos(φ(x,y)+δ_n),
-δ_n = 2πn/N
-```
+$$I_n(x,y)=A(x,y)+B(x,y)\cos(\phi(x,y)+\delta_n),\qquad\delta_n=\frac{2\pi n}{N}。$$
 
 程序计算：
 
-```text
-S = Σ I_n sin δ_n       C = Σ I_n cos δ_n
-φ_w = atan2(-S, C)      φ_w = mod(φ_w, 2π)
-m = (I_max-I_min)/(I_mean+ε)
-```
+$$
+\begin{aligned}
+S&=\sum_n I_n\sin\delta_n,&C&=\sum_n I_n\cos\delta_n,\cr
+\phi_w&=\operatorname{mod}(\operatorname{atan2}(-S,C),2\pi),&
+m&=\frac{I_{\max}-I_{\min}}{I_{\mathrm{mean}}+\varepsilon}。
+\end{aligned}
+$$
 
-`φ_w` 是包裹相位，只在一个 `2π` 周期内；`m` 是调制度，用于剔除阴影、饱和和低对比像素。代码先按频率切成三组四步图，再对每组独立计算 `φ_w`。
+\(\phi_w\) 是包裹相位，只在一个 \(2\pi\) 周期内；\(m\) 是调制度，用于剔除阴影、饱和和低对比像素。代码先按频率切成三组四步图，再对每组独立计算 \(\phi_w\)。
 
 ![相位灰度输出](/images/projects/structured-light-3d-reconstruction/phase-horizontal-gray.png)
 
@@ -156,25 +150,23 @@ m = (I_max-I_min)/(I_mean+ε)
 
 三个频率的包裹相位无法单独判断周期编号。程序把相邻频率相减，得到差频 `9` 和 `8`，再对差频再次外差得到 `1` 周期的粗尺度。核心级次估计为：
 
-```text
-k = round((φ_coarse · f_diff - φ_fine)/(2π))
-φ_abs = (2πk + φ_fine) / f_fine
-```
+$$k=\operatorname{round}\left(\frac{\phi_{\mathrm{coarse}}f_{\mathrm{diff}}-\phi_{\mathrm{fine}}}{2\pi}\right),\qquad
+\phi_{\mathrm{abs}}=\frac{2\pi k+\phi_{\mathrm{fine}}}{f_{\mathrm{fine}}}。$$
 
 实现分别沿 `(81,72)` 和 `(72,64)` 两条路径求中频绝对相位，去除低调制度/异常邻域后，再把中频结果提升回高频；两条路径在有效区域取平均。最终归一化相位再映射为投影仪坐标。换句话说，链路不是“直接把包裹相位拉直”，而是：
 
 ```text
-四步相移 → 三组包裹相位 → 9/8 差频 → 1 周期粗定位
-→ 估计条纹级次 → 恢复高分辨率绝对相位
+四步相移 -> 三组包裹相位 -> 9/8 差频 -> 1 周期粗定位
+-> 估计条纹级次 -> 恢复高分辨率绝对相位
 ```
 
 ![水平绝对相位](/images/projects/structured-light-3d-reconstruction/absolute-phase-set1-horizontal.png)
 
-*图 1：结果包中的水平绝对相位。亮度变化表示相位随投影方向连续变化，绿色点为标定板角点。*
+*图 1：水平绝对相位。亮度变化表示相位随投影方向连续变化，绿色点为标定板角点。*
 
 ![垂直绝对相位](/images/projects/structured-light-3d-reconstruction/absolute-phase-set1-vertical.png)
 
-*图 2：结果包中的垂直绝对相位。两张图共同给出投影仪平面的二维坐标。*
+*图 2：垂直绝对相位。两张图共同给出投影仪平面的二维坐标。*
 
 ![质量图](/images/projects/structured-light-3d-reconstruction/quality-map-set1.png)
 
@@ -184,17 +176,20 @@ k = round((φ_coarse · f_diff - φ_fine)/(2π))
 
 绝对相位映射出投影仪像素后，代码先调用 `cv2.undistortPoints` 去除相机和投影仪畸变，再构造：
 
-```text
-P_c = K_c [I | 0]
-P_p = K_p [R | t]
+$$P_c=K_c[I\mid0],\qquad P_p=K_p[R\mid t]。$$
+
+对相机像素 \(x_c=(u_c,v_c,1)\) 和投影仪像素 \(x_p=(u_p,v_p,1)\)，求解：
+
+```python
+points_4d = cv2.triangulatePoints(P_c, P_p, camera_pixels, projector_pixels)
+points_3d = points_4d[:3] / points_4d[3]
 ```
 
-对相机像素 `x_c=(u_c,v_c,1)` 和投影仪像素 `x_p=(u_p,v_p,1)`，求解：
+其齐次坐标形式也可以写成：
 
-```text
-X_h = cv2.triangulatePoints(P_c, P_p, x_c, x_p)
-X   = X_h[0:3] / X_h[3]
-```
+$$
+X=\frac{1}{w}[X_h,Y_h,Z_h]^T,\qquad
+\tilde{x}_c\times(P_cX)=0,\quad\tilde{x}_p\times(P_pX)=0。$$
 
 这一步的几何意义是寻找同时落在相机光线和投影仪光线上的三维点。代码还保留了单方向的光平面求交路径：已知 `u_p` 或 `v_p` 时，将相机射线与投影仪对应光平面求交；当分母接近零时标记为病态像素，避免把不稳定深度写入点云。
 
@@ -202,7 +197,7 @@ X   = X_h[0:3] / X_h[3]
 
 ![深度图](/images/projects/structured-light-3d-reconstruction/depth-map.png)
 
-*图 4：结果包中的深度图，显示了三角化后的深度分布和无效区域。*
+*图 4：深度图，显示了三角化后的深度分布和无效区域。*
 
 ![水平相位重建图](/images/projects/structured-light-3d-reconstruction/phase-horizontal-heatmap.png)
 
@@ -220,7 +215,7 @@ X   = X_h[0:3] / X_h[3]
 4. 运行 `三维重建.py`，读取标定结果，把绝对相位变成投影仪坐标，执行去畸变、三角化和点云过滤。
 5. 在 `absolute_phase_results/`、`reconstruction_results/` 查看中间图和深度图，在 PLY 文件中查看点云。
 
-本次文章展示的是仓库已经生成的结果，不把“以后再做实验”写成当前状态。UI 展示页：[结构光三维重建交互演示](/demos/structured-light-3d-reconstruction/)。
+本文同时提供 UI 展示页：[结构光三维重建交互演示](/demos/structured-light-3d-reconstruction/)。
 
 ## 9. 结果证据与边界
 
@@ -229,8 +224,8 @@ X   = X_h[0:3] / X_h[3]
 - `标定结果.txt`：相机/投影仪内参、畸变、`R,t` 与重投影误差；
 - `absolute_phase_results/`：绝对相位、质量图、相机/投影仪重投影诊断；
 - `reconstruction_results/`：相位灰度图、相位热力图、深度图和阶段性 PLY；
-- `pointCloud.ply`：结果包中的最终点云文件，PLY 头记录 `2,491,580` 个顶点。
+- `pointCloud.ply`：最终点云文件，PLY 头记录 `2,491,580` 个顶点。
 
-这些是一次本地结果包的可追溯证据，不应被解读成通用精度承诺。原理推导与章节组织参考我的论文仓库第三章：[lunwen_ZHQ 第三章](https://github.com/zhaohanqin/lunwen_ZHQ/blob/main/output/thesis/04_%E7%AC%AC%E4%B8%89%E7%AB%A0_%E5%9F%BA%E7%A1%80%E7%90%86%E8%AE%BA%E4%B8%8E%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AF.md)。
+这些结果用于说明完整链路已经产生了对应的中间产物和点云输出，不把单次结果外推为通用精度承诺。原理推导与章节组织参考我的论文仓库第三章：[lunwen_ZHQ 第三章](https://github.com/zhaohanqin/lunwen_ZHQ/blob/main/output/thesis/04_%E7%AC%AC%E4%B8%89%E7%AB%A0_%E5%9F%BA%E7%A1%80%E7%90%86%E8%AE%BA%E4%B8%8E%E6%A0%B8%E5%BF%83%E6%8A%80%E6%9C%AF.md)。
 
 系列导航：下一篇：[面向高反射表面的 Y-FFC 相位恢复网络](/2026/08/04/yffc-high-reflectance-reconstruction/)

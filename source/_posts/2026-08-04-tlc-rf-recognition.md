@@ -55,11 +55,11 @@ categories: [视觉计算]
 
 代码计算：
 
-```text
-total_travel = y_start - y_end
-spot_travel  = y_start - y_spot
-Rf = spot_travel / total_travel
-```
+$$
+\mathrm{total\_travel}=y_{\mathrm{start}}-y_{\mathrm{end}},\qquad
+\mathrm{spot\_travel}=y_{\mathrm{start}}-y_{\mathrm{spot}},\qquad
+R_f=\frac{\mathrm{spot\_travel}}{\mathrm{total\_travel}}
+$$
 
 只有质心位于起止线之间的斑点才进入结果。理想情况下 `Rf` 在 `[0,1]`，但它的可信度完全依赖三个 `y` 坐标是否在同一、正确的板坐标系中。
 
@@ -97,9 +97,9 @@ Rf = spot_travel / total_travel
 
 确定四个角点后，使用单应矩阵 `H`：
 
-```text
-[x', y', 1]^T ~ H [x, y, 1]^T
-```
+$$
+[x',\,y',\,1]^T\sim H\,[x,\,y,\,1]^T
+$$
 
 把透视四边形映射为标准正视矩形。后续起止线、泳道和斑点全部在这个 warped 坐标系中计算。
 
@@ -207,9 +207,9 @@ Rf 公式简单，但最终误差可分为四层：
 
 可以对 Rf 做一阶敏感性分析。设：
 
-```text
-Rf = (y_s - y_p)/(y_s - y_e)
-```
+$$
+R_f=\frac{y_s-y_p}{y_s-y_e}
+$$
 
 当起止线距离较小时，相同像素误差会造成更大的 Rf 变化。这也是为什么不能只报告斑点模型的 mAP，就把它等同于最终 Rf 精度；必须用标注的起止线和斑点中心直接评估最终测量误差。
 

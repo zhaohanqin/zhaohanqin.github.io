@@ -107,9 +107,8 @@ markdown:
     # 避免影响技术文章和数学公式
     typographer: false
 
-  # KaTeX 数学公式插件
-  plugins:
-    - '@renbaoshuo/markdown-it-katex'
+  # 数学公式由 MathJax 客户端渲染，不再服务端转 KaTeX（避免双重渲染）
+  plugins: []
 
 
 # =========================================================

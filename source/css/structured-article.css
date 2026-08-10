@@ -1,0 +1,34 @@
+/* Project article readability: formulas and code stay readable on narrow screens. */
+#article-container mjx-container[display="true"] {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.65rem 0;
+}
+
+#article-container code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#article-container figure.highlight {
+  margin: 1rem 0 1.25rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+#article-container figure.highlight pre {
+  min-width: max-content;
+  line-height: 1.65;
+}
+
+@media (max-width: 768px) {
+  #article-container mjx-container[display="true"] {
+    font-size: 0.88em;
+  }
+
+  #article-container figure.highlight pre {
+    font-size: 0.82rem;
+  }
+}

@@ -75,9 +75,9 @@ Y-FFC 项目的定位，是在相位解码之前加入一个学习式的灰度�
 
 ### 亮成分代理
 
-```text
-b_gt = clamp(x - y, 0, 1)
-```
+$$
+b_{\mathrm{gt}}=\mathrm{clamp}(x-y,\,0,\,1)
+$$
 
 这个定义隐含了“干扰主要是附加亮分量”的假设。若真实反射同时改变局部对比度、产生饱和裁剪或遮蔽原条纹，简单差值并不等同于物理反射层。因此本文把它称为训练代理，而不是普适光学分解定律。
 
@@ -87,11 +87,10 @@ b_gt = clamp(x - y, 0, 1)
 
 代码对输入 `x` 计算 Sobel 梯度幅值并归一化：
 
-```text
-gx = Sobel_x(x)
-gy = Sobel_y(x)
-g_gt = normalize(sqrt(gx*gx + gy*gy))
-```
+$$
+g_x=\mathrm{Sobel}_x(x),\qquad g_y=\mathrm{Sobel}_y(x),\qquad
+g_{\mathrm{gt}}=\mathrm{normalize}\!\left(\sqrt{g_x^2+g_y^2}\right)
+$$
 
 需要注意，梯度目标来自输入图，而不是目标恢复图。它更像“当前图中哪里存在结构变化”的辅助信息，用于提醒主干关注条纹边缘和突变区域，而不是直接给出干净条纹的梯度真值。
 
@@ -138,24 +137,24 @@ feature
 
 模型先建立一个物理直觉较强的相减路径：
 
-```text
-r_sub = clamp(x - b, 0, 1)
-```
+$$
+r_{\mathrm{sub}}=\mathrm{clamp}(x-b,\,0,\,1)
+$$
 
 但 `b` 的误差会被一比一传给 `r_sub`，而裁剪到 0 的暗区信息无法恢复。为此，模型另设直接恢复头 `r_direct`，再学习一个融合系数：
 
-```text
-alpha = sigmoid(a)
-r_fused = alpha*r_direct + (1-alpha)*r_sub
-```
+$$
+\alpha=\mathrm{sigmoid}(a),\qquad
+r_{\mathrm{fused}}=\alpha\,r_{\mathrm{direct}}+(1-\alpha)\,r_{\mathrm{sub}}
+$$
 
 检查到的实现中，`alpha` 是学习得到的融合参数/门控量，但没有证据表明它经过不确定性校准，所以不能把它解释成置信度。
 
 融合后还有残差精修：
 
-```text
-r = clamp(r_fused + 0.15*delta(r_fused, x, r_direct), 0, 1)
-```
+$$
+r=\mathrm{clamp}\!\left(r_{\mathrm{fused}}+0.15\,\delta\!\left(r_{\mathrm{fused}},x,r_{\mathrm{direct}}\right),\,0,\,1\right)
+$$
 
 这形成两种互补归纳偏置：相减路径保留“去除亮成分”的物理直觉，直接路径允许网络修复非加性失真，精修头再处理融合后的局部残差。项目已经准备了用于检验这一组合的消融变体，但没有提交结果。
 

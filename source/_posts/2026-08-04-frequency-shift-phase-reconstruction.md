@@ -51,9 +51,9 @@ categories: [视觉计算]
 
 在理想模型下，投影仪轴向坐标为 `u` 的点，其复响应可近似写成：
 
-```text
-D[k] ~= A * exp(j * 2*pi * s*k*u/N)
-```
+$$
+D[k]\approx A\exp\!\left(j\,2\pi\,\frac{s\,k\,u}{N}\right)
+$$
 
 其中：
 
@@ -69,9 +69,9 @@ D[k] ~= A * exp(j * 2*pi * s*k*u/N)
 
 对每个扫描频率，项目投射四个相位偏移：`0、pi/2、pi、3pi/2`。按照当前图像顺序，复数解调为：
 
-```text
-D[k] = (I0[k] - I2[k]) + j*(I3[k] - I1[k])
-```
+$$
+D[k]=\bigl(I_0[k]-I_2[k]\bigr)+j\,\bigl(I_3[k]-I_1[k]\bigr)
+$$
 
 相差 `pi` 的图像相减，会在理想模型中抵消平均照明项；实部和虚部共同保留当前频率下的调制相位。因此一组 `4M` 张灰度图，经过切片后形成：
 
@@ -98,22 +98,21 @@ D: (M, Hc, Wc), complex
 
 FFT 的第 `q` 个基函数为：
 
-```text
-exp(-j * 2*pi*q*k/L)
-```
+$$
+\exp\!\left(-j\,2\pi\,\frac{q\,k}{L}\right)
+$$
 
 把它与前面的信号模型匹配，可得到：
 
-```text
-q/L = s*u/N
-u = q*N/(L*s)
-```
+$$
+\frac{q}{L}=\frac{s\,u}{N},\qquad u=\frac{q\,N}{L\,s}
+$$
 
 当前实现选择：
 
-```text
-L = round(N/s)
-```
+$$
+L=\mathrm{round}\!\left(\frac{N}{s}\right)
+$$
 
 于是 `N/(L*s)` 接近 1，频谱 bin `q` 可以方便地映射为投影仪坐标。检查的示例配置使用 `M=301、s=0.5`，投影仪分辨率为 `1920 x 1080`，但这些只是当前配置参数，不是算法必须固定的硬件规格。
 
@@ -149,9 +148,9 @@ L = round(N/s)
 
 重建时真正的投影仪像素顺序是：
 
-```text
-(x_p, y_p) = (disp_ver, disp_hor)
-```
+$$
+(x_p,\,y_p)=\bigl(d_{\mathrm{ver}},\,d_{\mathrm{hor}}\bigr)
+$$
 
 ## 低内存模式与分块模式并不完全等价
 
@@ -165,9 +164,9 @@ L = round(N/s)
 
 代码保存的峰值分数近似为：
 
-```text
-peak = max(abs(FFT_valid)) / L
-```
+$$
+\mathrm{peak}=\frac{\max\left|\mathrm{FFT_{valid}}\right|}{L}
+$$
 
 重建前又根据 `L/M` 对两个方向的峰值做补偿，并取较小值作为联合筛选依据。它反映所选频谱峰的相对强度，但没有概率归一化、统计校准或跨数据集阈值证明。
 
@@ -189,10 +188,10 @@ peak = max(abs(FFT_valid)) / L
 
 重建阶段先构造两个像素集合：
 
-```text
-camera pixel    = (x_c, y_c)
-projector pixel = (disp_ver[y_c,x_c], disp_hor[y_c,x_c])
-```
+$$
+\text{相机像素}=(x_c,\,y_c),\qquad
+\text{投影仪像素}=\bigl(d_{\mathrm{ver}}[y_c,x_c],\,d_{\mathrm{hor}}[y_c,x_c]\bigr)
+$$
 
 有效掩码依次检查：
 
@@ -206,13 +205,19 @@ projector pixel = (disp_ver[y_c,x_c], disp_hor[y_c,x_c])
 ```text
 undistortPoints(camera_pixels, Kc, dist_c, P=Kc)
 undistortPoints(projector_pixels, Kp, dist_p, P=Kp)
-
-Pc = Kc [I | 0]
-Pp = Kp [R | T]
-
-Xh = triangulatePoints(Pc, Pp, camera_pixels, projector_pixels)
-X  = Xh[:3] / Xh[3]
 ```
+
+$$
+P_c=K_c\,[\,I\mid 0\,],\qquad P_p=K_p\,[\,R\mid T\,]
+$$
+
+```text
+Xh = triangulatePoints(Pc, Pp, camera_pixels, projector_pixels)
+```
+
+$$
+X=X_h[0:3]\,/\,X_h[3]
+$$
 
 如果提供白光图，代码会按相机像素为点云采样颜色；否则使用灰色。PLY 优先通过 Open3D 写出，在库不可用时还有 ASCII 回退路径。
 
