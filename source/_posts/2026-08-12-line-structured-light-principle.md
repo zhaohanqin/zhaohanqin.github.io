@@ -22,7 +22,7 @@ mathjax: true
 
 ![线结构光系统组成](/images/projects/line-structured-light-principle/ppt-system-composition.png)
 
-*图：线结构光系统的基本组成（相机 + 线激光器；标定阶段需要标定板）。*
+*图：线结构光系统的基本组成（相机 + 线激光器；标定阶段需要标定板）。（图源：线结构光成像原理讲解 PPT）*
 
 ## 2. 本质：图像里的"激光线"其实是激光平面
 
@@ -34,7 +34,7 @@ $$\text{激光平面} \cap \text{物体表面} = \text{空间激光条纹}$$
 
 ![激光平面的本质](/images/projects/line-structured-light-principle/ppt-laser-plane.png)
 
-*图：激光器发出的是一片扇形光平面；图像中的线是该平面与物体表面交线的投影。*
+*图：激光器发出的是一片扇形光平面；图像中的线是该平面与物体表面交线的投影。（图源：线结构光成像原理讲解 PPT）*
 
 ## 3. 成像几何：三个几何对象
 
@@ -66,7 +66,7 @@ $$\boxed{\text{相机射线} \cap \text{激光平面}}$$
 
 ![双目视觉 vs 线结构光](/images/projects/line-structured-light-principle/ppt-triangulation-compare.png)
 
-*图：两者都是三角测量，区别是第二个约束是"另一条射线"还是"一个平面"。*
+*图：两者都是三角测量，区别是第二个约束是"另一条射线"还是"一个平面"。（图源：线结构光成像原理讲解 PPT）*
 
 从自由度看：单目相机里一个像素对应一条射线 $X(\lambda)=\lambda d$，$\lambda$（深度）未知；激光平面提供额外约束 $n^T X + D = 0$，代入后就能解出唯一的 $\lambda$。
 
@@ -80,7 +80,7 @@ $$d = K^{-1} p = [x_n,\ y_n,\ 1]^T$$
 
 ![像素到空间射线](/images/projects/line-structured-light-principle/ppt-ray-plane-intersection.png)
 
-*图：畸变校正 → 反投影归一化坐标 → 射线与激光平面求交，得到唯一三维点。*
+*图：畸变校正 → 反投影归一化坐标 → 射线与激光平面求交，得到唯一三维点。（图源：线结构光成像原理讲解 PPT）*
 
 ## 6. 激光平面的数学表示
 
@@ -125,7 +125,7 @@ $$Z=-\frac{D}{Ax_n+By_n+C},\qquad X=x_n Z,\qquad Y=y_n Z$$
 
 ![多姿态标定](/images/projects/line-structured-light-principle/ppt-multi-pose-calibration.png)
 
-*图：一个姿态只给一条空间交线，一条直线无法唯一确定平面；需要多个姿态形成二维分布。*
+*图：一个姿态只给一条空间交线，一条直线无法唯一确定平面；需要多个姿态形成二维分布。（图源：线结构光成像原理讲解 PPT）*
 
 ## 10. 哪些标定板运动有效、哪些无效
 
@@ -155,7 +155,7 @@ $$M = U\Sigma V^T,\qquad \sigma_1\ge\sigma_2\ge\sigma_3$$
 
 ![SVD 平面拟合](/images/projects/line-structured-light-principle/ppt-svd-plane-fitting.png)
 
-*图：用 SVD 判断数据分布，再用最小奇异值对应的右奇异向量作为平面法向量。*
+*图：用 SVD 判断数据分布，再用最小奇异值对应的右奇异向量作为平面法向量。（图源：线结构光成像原理讲解 PPT）*
 
 拟合方法：计算质心 $\bar P$ → 构造去中心化矩阵 → SVD → 最小奇异值对应右奇异向量即法向量 $n$ → $D=-n^T\bar P$。实际工程还会用 RANSAC、距离阈值、亮度阈值等剔除异常点后再拟合。
 
