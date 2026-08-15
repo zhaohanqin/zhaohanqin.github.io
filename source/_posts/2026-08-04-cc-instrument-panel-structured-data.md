@@ -1,12 +1,12 @@
 ---
-title: 化学色谱仪面板识别：视觉截图与 PeakTrak XML 两条路径的峰列表契约
+title: 过柱结果数字化：视觉截图与 PeakTrak XML 两条路径的峰列表契约
 date: 2026-08-04 10:20:00
 permalink: /2026/08/04/cc-instrument-panel-structured-data/
 tags: [工业视觉, 图像分割, OCR, 曲线追踪, 峰值检测, XML, 数据提取, 视觉计算系列]
 categories: [视觉计算]
 ---
 
-化学色谱（CC）过柱后，操作员需要把面板上的曲线、试管编号和峰位置读成机器可用的结构化数据，供 LC-MS first shooting 等下游流程消费。这个仓库（CC_result_recognition）提供两条互为补充的实现路径：**路径 A 纯视觉**，从仪器右侧面板截图出发；**路径 B PeakTrak XML**，直接解析仪器导出的运行文件（`.txt`/`.xml`，有运行文件时优先）。两条路径产出同一套 JSON 语义（`peak` + `rescale`），并且从 GitHub 克隆后即可在 `sample_results/` 看到两套“输入 → 中间过程 → 最终结果”的完整样例。
+化学色谱（CC）过柱后，操作员需要把面板上的曲线、试管编号和峰位置读成机器可用的结构化数据，供 LC-MS first shooting 等下游流程消费。这个仓库（过柱结果数字化）提供两条互为补充的实现路径：**路径 A 纯视觉**，从仪器右侧面板截图出发；**路径 B PeakTrak XML**，直接解析仪器导出的运行文件（`.txt`/`.xml`，有运行文件时优先）。两条路径产出同一套 JSON 语义（`peak` + `rescale`），并且从 GitHub 克隆后即可在 `sample_results/` 看到两套“输入 → 中间过程 → 最终结果”的完整样例。
 
 <!-- more -->
 
@@ -212,4 +212,4 @@ OCR 擅长把局部文字图像变成字符串，却不能自动回答：
 
 这个项目的核心价值，是把一个复杂仪器结果拆成两条可替换、可降级、可通过稳定契约交付的路径。现在，克隆仓库就能看到两条路径各自的真实产物；下一步需要让每个数字都能被重新计算。
 
-系列导航：上一篇：[从 TLC 图像到 Rf](/2026/08/04/tlc-rf-recognition/)；下一篇：[YOLO 表格分割与 LCMS 孔板识别](/2026/08/04/object-recognition-perspective-exploration/)
+系列导航：上一篇：[TLC 板谱智测](/2026/08/04/tlc-rf-recognition/)；下一篇：[孔板与桌面](/2026/08/04/object-recognition-perspective-exploration/)

@@ -1,5 +1,5 @@
 ---
-title: 货架多模型视觉检测流水线：从一张图到机器人可读的结构化结果
+title: 实验室货架视觉中枢：从一张货架图到机器人可读的结构化结果
 date: 2026-08-15 10:30:00
 permalink: /2026/08/15/shelf-vision-pipeline/
 tags: [计算机视觉, YOLO, 实例分割, 异常检测, YOLOE, PatchCore, AprilTag, 实验室自动化, 视觉计算系列]
@@ -33,7 +33,7 @@ categories: [视觉计算]
 | 7 | 导出 JSON + 可视化 | `result.json`、`*_pipeline_overlay.jpg` |
 | 8 | 目的 B（独立）：参考图+LabelMe → 逐参考 YOLOE Visual Prompt → 汇总 | `detections[]`、per-ref mask/overlay、最终 overlay/JSON |
 
-![货架多模型视觉检测流水线](/images/projects/shelf-vision-pipeline/shelf-vision-pipeline.png)
+![实验室货架视觉中枢流水线](/images/projects/shelf-vision-pipeline/shelf-vision-pipeline.png)
 
 *图 1：根据仓库代码与 README 重绘的流水线结构，箭头方向即数据流：`instances[]` 经定位码纠正进入关系匹配；YOLO 掩码进入异常检测；`anomaly{}` 与编号后的 `labels/relations[]` 汇入导出。它说明系统如何组织，不表示某次运行的实验效果。*
 
@@ -282,10 +282,10 @@ python scripts/detect_multi_ref.py \
 
 这个项目是实验室自动化视觉生态中的一环，与另外三个仓库共享同一套“YOLO 分割 + 几何规则 + 数据闭环”方法论：
 
-- [TLC 薄层色谱 Rf 自动测定](/2026/08/04/tlc-rf-recognition/)：TLC 板的分割、透视展开与泳道/Rf 计算；
-- [YOLO 表格/屏幕分割与透视正视化](/2026/08/04/object-recognition-perspective-exploration/)：桌面/屏幕的 mask 到正视图，以及 LCMS 66 孔逐孔状态；
-- [化学色谱仪面板识别](/2026/08/04/cc-instrument-panel-structured-data/)：从面板截图或 PeakTrak 文件提取峰列表，供下游 LC-MS first shooting 消费。
+- [TLC 板谱智测](/2026/08/04/tlc-rf-recognition/)：TLC 板的分割、透视展开与泳道/Rf 计算；
+- [孔板与桌面](/2026/08/04/object-recognition-perspective-exploration/)：桌面/屏幕的 mask 到正视图，以及 LCMS 66 孔逐孔状态；
+- [过柱结果数字化](/2026/08/04/cc-instrument-panel-structured-data/)：从面板截图或 PeakTrak 文件提取峰列表，供下游 LC-MS first shooting 消费。
 
 四者共同回答“实验室里‘看到了什么、放得对不对、读出了什么’”，并以结构化 JSON 对接下游系统。
 
-系列导航：上一篇：[YOLO 表格分割与 LCMS 孔板识别](/2026/08/04/object-recognition-perspective-exploration/)
+系列导航：上一篇：[孔板与桌面](/2026/08/04/object-recognition-perspective-exploration/)

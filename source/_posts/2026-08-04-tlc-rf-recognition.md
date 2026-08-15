@@ -1,5 +1,5 @@
 ---
-title: TLC 薄层色谱 Rf 自动测定：从全景照片到结构化结果
+title: TLC 板谱智测：从全景照片到结构化 Rf 结果
 date: 2026-08-04 10:15:00
 permalink: /2026/08/04/tlc-rf-recognition/
 tags: [计算机视觉, YOLO, 实例分割, 透视变换, TLC, Rf, 视觉计算系列]
@@ -294,4 +294,4 @@ $$
 
 这个项目最有价值的部分，是把 Rf 测量从“一个模型输出”拆成了可追踪的几何和视觉链路。下一步不应只继续调检测阈值，而要对每一级误差建立标注和最终 Rf 误差的联系。
 
-系列导航：上一篇：[频移法结构光重建](/2026/08/04/frequency-shift-phase-reconstruction/)；下一篇：[把 CC 面板截图变成结构化数据](/2026/08/04/cc-instrument-panel-structured-data/)
+系列导航：上一篇：[频移法结构光重建](/2026/08/04/frequency-shift-phase-reconstruction/)；下一篇：[过柱结果数字化](/2026/08/04/cc-instrument-panel-structured-data/)
