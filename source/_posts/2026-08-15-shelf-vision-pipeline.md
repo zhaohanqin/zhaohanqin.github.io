@@ -6,7 +6,7 @@ tags: [计算机视觉, YOLO, 实例分割, 异常检测, YOLOE, PatchCore, Apri
 categories: [视觉计算]
 ---
 
-实验室自动化里，机器人需要先“看懂”货架：哪里是底座，上面放了什么，放得对不对，有没有不该出现的东西。一张普通 RGB 照片本身不携带这些语义，而固定类别检测模型又无法回答“多出来的物品是什么”这种开放问题。这个项目把问题拆成多个可独立训练的检测模型加一套规则编排，最终输出一份机器人可以直接消费的结构化 JSON 和一张供人复核的叠加图。
+实验室自动化里，机器人需要先“看懂”货架：哪里是底座，上面放了什么，放得对不对，有没有不该出现的东西。一张普通 RGB 照片本身不携带这些语义，而固定类别检测模型又无法回答“多出来的物品是什么”这种开放问题。这个项目把问题拆成多个可独立训练的检测模型加一套规则编排，最终输出一份机器人可以直接消费的结构化 JSON 和一张供人复核的叠加图。仓库同时包含第二条独立业务线：**YOLOE 参考图跨场景检测**——只给几张参考图，就能在别的角度/场景里找同款外观的目标。
 
 <!-- more -->
 
@@ -14,10 +14,11 @@ categories: [视觉计算]
 
 | 项目要素 | 内容 |
 |---|---|
-| 项目目的 | 输入一张货架图，输出底座/物体的实例级分割、物体-底座合规关系、异常/异物结论、从左到右编号与结构化 JSON。 |
-| 核心输入 | 货架 RGB 图或图像目录；底座/物体/异常模型权重；YAML 业务规则 |
-| 核心输出 | `result.json`（bases/objects/relations/anomaly/markers/warnings）+ `*_pipeline_overlay.jpg` 叠加图 + 批量 `run_summary.json` |
-| 项目重点 | 感知（YOLO 分割）、异常（YOLOE 差分或 PatchCore）、规则（几何+业务映射）、纠正（AprilTag）分层解耦，改规则不必重训模型。 |
+| 项目目的 | 双项目：A 货架固定类别检测流水线（底座/物体/合规/异常/编号 + 结构化 JSON）；B YOLOE 参考图跨场景检测（参考图 → 场景中找同款外观目标）。 |
+| 核心输入 | A：货架 RGB 图或目录 + 底座/物体/异常权重 + YAML 业务规则；B：多角度参考图 + LabelMe/bbox + 场景图 + 非 prompt-free 的 YOLOE 权重 |
+| 核心输出 | A：`result.json` + `*_pipeline_overlay.jpg` + `run_summary.json`；B：`detections[]` + 每参考 mask/overlay + 最终汇总 overlay/JSON |
+| 入库样例 | `results/01_shelf_pipeline/`（示例 A 端到端）、`results/02_yoloe_visual_prompt/`（示例 B 端到端）；克隆仓库即可查看 |
+| 项目重点 | A：感知（YOLO 分割）、异常（YOLOE 差分或 PatchCore）、规则（几何+业务映射）、纠正（AprilTag）分层解耦；B：视觉提示开放词汇检测，不预设类别、不重训模型 |
 
 ## 完整实现流程
 
@@ -30,6 +31,7 @@ categories: [视觉计算]
 | 5 | 物体-底座关系匹配 | `relations[]`、`warnings[]` |
 | 6 | 匹配成功物体从左到右编号 | `relations[].label` |
 | 7 | 导出 JSON + 可视化 | `result.json`、`*_pipeline_overlay.jpg` |
+| 8 | 目的 B（独立）：参考图+LabelMe → 逐参考 YOLOE Visual Prompt → 汇总 | `detections[]`、per-ref mask/overlay、最终 overlay/JSON |
 
 ![货架多模型视觉检测流水线](/images/projects/shelf-vision-pipeline/shelf-vision-pipeline.png)
 
@@ -104,7 +106,27 @@ categories: [视觉计算]
 
 当 YOLO 在相似底座上可能认错时，AprilTag 提供绝对空间锚点。`marker_rules.yaml` 里按标签 ID 的空间关系（上方、左侧、某行、夹层）强制纠正 `class_name`，并可为每个物体输出相对参考定位码的像素偏移。当前配置默认关闭，作为新场景的后备能力。
 
-## 四、输出契约与可视化语义
+## 四、目的 B：YOLOE 参考图跨场景检测
+
+货架流水线只能检出**训练过的固定类别**。现场常遇到“只给几张参考图、要在别的角度/场景里找同款东西”的需求，这是开集、少样本问题。目的 B 用 Ultralytics YOLOE 的 **Visual Prompt** 能力解决：参考图（可多角度）+ LabelMe/bbox 作为视觉提示，在场景图中检出同款/同类外观目标，输出 bbox、confidence 与实例掩码。
+
+子项目代码在 `YOLOE_work/yoloe-reference-detection/`，与主流程使用**独立虚拟环境**（锁定 `ultralytics==8.4.118`）。处理链为：
+
+```text
+多张参考图 + LabelMe → 逐张参考做 Visual Prompt 推理 → per_ref 框/掩码
+  → 多参考汇总（aspect_conf / max_conf / nms）→ 最终框 + overlay + JSON
+```
+
+几个关键边界：
+
+- **必须使用非 prompt-free 权重**（`yoloe-26l-seg.pt`），`*-pf.pt` 只用于目的 A 的异常差分，两者不要混用；
+- 推荐主路径是多参考 + LabelMe（`detect_multi_ref.py`）；另提供单图注册（`register_object.py` + `detect_image.py`）与纯文字提示（`detect_text_prompt.py`）；
+- `aggregate.py` 的 `aspect_conf` 模式把置信度乘以“与参考框长宽比的相似度”作为汇总分；
+- 第一版目标是**外观同类检索**，不是“唯一物理实例 ReID”——不能宣称能区分桌面上 20 个完全一样的瓶子中具体哪一个。
+
+仓库还新增了 `api/yolo_detect_api.py`，把目的 A 的推理挂成可调用的 HTTP 接口（README 声明）。
+
+## 五、输出契约与可视化语义
 
 `result.json` 是最终交付物，字段结构如下：
 
@@ -120,9 +142,81 @@ categories: [视觉计算]
 
 叠加图颜色语义：绿框=底座，橙框=合规物体，红框=有告警物体，品红=异常物品。
 
-> 注意：README 中展示的 result.json 是**结构示例**，不是某次真实运行的产物；仓库通过 `.gitignore` 排除了运行输出。这一点在“训练证据与结果边界”一节有详细说明。
+> 注意：README 中展示的 result.json 是**结构示例**；而 `results/` 下随仓库发布的 `result.json` 与叠加图是真实运行产物，下一节给出两套完整样例。
 
-## 五、训练与数据闭环
+## 六、真实结果：随仓库发布的两套样例
+
+仓库自 2026-08-15 的提交起，把两套“输入 → 中间过程 → 最终输出”完整样例放进了 `results/`（权重仍在仓库外，克隆即可查看）。两套样例都只代表**该次运行、该配置**，不是精度评估。
+
+### 示例 A：货架主流程端到端（`results/01_shelf_pipeline/`）
+
+输入是一张真实货架图 `20260806-144436.jpeg`，按主流程真实执行顺序落盘：底座分割 → 物体分割 → YOLOE 异常差分 → 关系匹配与最终叠加图。本示例关闭了 AprilTag 纠正（`marker_correction_enabled=false`）。
+
+![货架输入原图](/images/projects/shelf-vision-pipeline/shelf-input.jpg)
+
+*图 2：示例 A 输入：真实货架图（1104×1472）。*
+
+![底座分割叠加图](/images/projects/shelf-vision-pipeline/shelf-base-overlay.jpg)
+
+*图 3：步骤 1a，YOLO 底座实例分割叠加图（本例检出 6 个底座）。*
+
+![目标物体分割叠加图](/images/projects/shelf-vision-pipeline/shelf-object-overlay.jpg)
+
+*图 4：步骤 1b，YOLO 目标物体实例分割叠加图（本例检出 11 个目标物体）。*
+
+![异常差分叠加图](/images/projects/shelf-vision-pipeline/shelf-anomaly-overlay.jpg)
+
+*图 5：步骤 2，YOLOE 全物品检出减去已知区域后的异常热力/掩码叠加。*
+
+![最终流水线叠加图](/images/projects/shelf-vision-pipeline/shelf-final-overlay.jpg)
+
+*图 6：最终叠加图（绿=底座、橙/红=物体、品红=异常），颜色语义与代码一致。*
+
+该样例 `04_final/result.json` 的关键数值：
+
+| 项 | 值 |
+|---|---|
+| 运行模式 | `yolo_mode=dual`，`anomaly.backend=yoloe`，YOLOE imgsz=1280 / conf=0.10 |
+| 底座 / 物体 | 6 个底座、11 个目标物体 |
+| YOLOE 差分 | 原始检出 24 个物品 → 排除已知区域后保留 **17 个异常实例** |
+| 关系告警 | 7 条 `sample_tube 不在任何底座上`（max_overlap=0.000） |
+| 异常示例 | storage box（conf≈0.90）、duct tape（≈0.63）、tube（≈0.55）、cabinet（≈0.53）等 |
+| 运行摘要 | `run_summary.json`：run_id=`shelf_demo_complete`，ok=true |
+
+异常差分参数（与配置一致）：`iou_exclude=0.30`、`known_cover_exclude=0.25`、`remain_ratio=0.50`、`exclude_dilate_px=16`、`min_area_px=400`。
+
+### 示例 B：YOLOE 参考图跨场景检测（`results/02_yoloe_visual_prompt/`）
+
+用 5 张多角度参考图（各带 LabelMe 标注）在另一张场景图里找同款外观目标。下图依次是：一张参考图、场景图、其中一张参考（ref04，最终命中来源）的单独检出、以及多参考汇总后的最终检出。
+
+![参考图](/images/projects/shelf-vision-pipeline/vp-reference.jpg)
+
+*图 7：示例 B 的一张参考图（共 5 张多角度参考，均带 LabelMe 标注）。*
+
+![场景图](/images/projects/shelf-vision-pipeline/vp-scene.jpg)
+
+*图 8：待检测场景图（原图 4096×3072，此处缩略显示）。*
+
+![单参考检出叠加图](/images/projects/shelf-vision-pipeline/vp-per-ref-overlay.jpg)
+
+*图 9：仅用 ref04 这一张参考做 Visual Prompt 的检出叠加图。*
+
+![多参考汇总最终叠加图](/images/projects/shelf-vision-pipeline/vp-final-overlay.jpg)
+
+*图 10：`aspect_conf` 汇总后保留的最终框（品红框）。*
+
+该样例 `03_final/*_final_result.json` 的关键数值：
+
+| 项 | 值 |
+|---|---|
+| 权重 / 参数 | `yoloe-26l-seg.pt`（非 pf）、imgsz=1280、conf=0.05 |
+| 汇总 | `aspect_conf`（置信度 × 参考框长宽比相似度）、iou-thr=0.5、top-k=1 |
+| 检出过程 | 5 张参考共 19 个原始框 → 汇总保留 **1 框** |
+| 最终框 | confidence≈0.82，来源 `ref04`，aspect_similarity≈0.82 |
+
+这个示例说明“给参考图找同款”的完整链路是可运行的；但它只有单场景、单配置，且第一版只做外观同类检索，不能据此推断任意场景的召回率。
+
+## 七、训练与数据闭环
 
 ### 数据工程
 
@@ -141,7 +235,7 @@ categories: [视觉计算]
 
 此外，`models/patchcore/latest_checkpoint.txt` 指向一次 PatchCore 训练的检查点路径，证明该训练发生过，但检查点本体未入库，无法据此引用任何效果。
 
-## 六、如何运行
+## 八、如何运行
 
 仓库不托管权重与数据，克隆后需自备：
 
@@ -159,13 +253,30 @@ python pipeline/run_pipeline.py --input path/to/images
 
 配置按 `run_pipeline.py` 顶部 `CONFIG` 与 `configs/pipeline.yaml` 合并（CONFIG 覆盖 YAML），CLI 参数可覆盖两者（以 `_merge_pipeline_cfg` 的实际逻辑为准）。常用开关：`yolo_mode`（dual/unified）、`anomaly.backend`（yoloe/patchcore/off）、`marker_correction_enabled`、`allow_missing_models`。
 
-## 七、限制与下一步
+目的 B（YOLOE 参考检测）需要独立环境与**非 prompt-free** 权重：
 
-- **端到端结果待补充**：仓库内没有真实运行的 result.json 与叠加图，文章无法展示实际效果；需要先在本地放置权重跑通，并把一份精简样例放入仓库。
+```bash
+cd YOLOE_work/yoloe-reference-detection
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt        # 锁定 ultralytics==8.4.118
+python scripts/download_weights.py --name yoloe-26l-seg.pt
+python scripts/detect_multi_ref.py \
+  --ref-dir ../../results/02_yoloe_visual_prompt/00_references \
+  --source ../../results/02_yoloe_visual_prompt/01_scene \
+  --aggregate aspect_conf --iou-thr 0.5 --top-k 1 \
+  --weights ../../models/yoloe_anomaly/yoloe-26l-seg.pt \
+  --imgsz 1280 --conf 0.05
+```
+
+## 九、限制与下一步
+
+- **样例是单次运行**：示例 A/B 各只有一张货架图/一个场景，展示的是“该次运行在该配置下”的真实产物，不能外推为准确率、召回率或泛化能力。
+- **无人工标注对照**：示例 A 的底座/物体/异常检出没有真值标注对照，无法计算精度；示例 B 没有参考类别上的召回评估。
 - **dual 模型效果未公开**：底座/物体权重的训练指标与运行表现不在仓库，无法断言生产路径精度。
 - **统一模型“尚在验证”**：训练日志存在，但 README 明确生产默认仍是 dual。
 - **泛化能力需迭代**：提交历史中记录了“现阶段模型的泛化能力还是比较差的，后续还要针对性地做出改进”等表述，这与训练日志并存，说明项目当前处于数据/模型持续迭代阶段。
 - **定位码纠正默认关闭**：新场景未启用，效果待实测。
+- **YOLOE 参考检测的边界**：第一版是“外观同类检索”而不是“唯一物理实例 ReID”；单场景样例，准确率待评估。
 
 ## 相关项目
 
