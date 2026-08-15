@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="结构光三维重建系统的中文静态交互展示：查看相机-投影仪单目主链、双目分支、相位解码、三角化和点云输出流程。">
-  <title>结构光三维重建系统｜项目交互展示</title>
+  <meta name="description" content="结构光三维重建系统的中文静态交互展示：单目（相机-投影仪）与双目（左右双相机）两条链路分开讲解标定差异，在相位解码与三维重建处汇合，并展示真实条纹、相位、深度与点云结果。">
+  <title>结构光三维重建系统｜单目与双目双链路展示</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -18,26 +18,25 @@
       <div class="intro-copy">
         <p class="kicker">STRUCTURED LIGHT / 结构光视觉</p>
         <h1 id="page-title">结构光三维重建系统</h1>
-      <p class="lead">从标定图和多频相移条纹出发，先恢复绝对相位与像素对应，再沿相机-投影仪单目主链或双目分支完成三角化。</p>
+        <p class="lead">一套代码里跑着两条完整链路：<strong>单相机 + 单投影仪</strong> 的标准面结构光系统，与 <strong>左右双相机</strong> 的双目分支。它们在标定阶段分叉——一条标定“相机-投影仪”，一条标定“相机-相机”——随后在相位解码与三维重建处汇合。</p>
       </div>
       <dl class="project-facts">
-        <div><dt>输入</dt><dd>标定图、相移条纹序列</dd></div>
-        <div><dt>链路</dt><dd>相机-投影仪 / 双目</dd></div>
+        <div><dt>输入</dt><dd>标定板图、相移条纹序列</dd></div>
+        <div><dt>链路</dt><dd>相机-投影仪 / 左右双相机</dd></div>
         <div><dt>输出</dt><dd>深度图、有效掩码、PLY 点云</dd></div>
       </dl>
-      <p class="truth-note"><strong>演示边界：</strong>这是基于真实 PyQt5 控件和实际输出命名的静态交互讲解页，不上传图像、不调用模型，也不在浏览器中执行标定。</p>
+      <p class="truth-note"><strong>演示边界：</strong>这是基于仓库中两个真实 PyQt5 程序（结构光系统UI、双目结构光系统UI）的真实界面截图与真实运行产物整理的静态讲解页，不上传图像、不调用模型，也不在浏览器中执行标定。</p>
     </section>
 
     <section class="workbench" aria-labelledby="workbench-title">
       <div class="workbench-head">
         <div>
-          <p class="section-index">01 / 操作流程</p>
-          <h2 id="workbench-title">选择一条工作路径</h2>
+          <p class="section-index">01 / 双链路操作流程</p>
+          <h2 id="workbench-title">先选一条链路，再看它走到哪一步汇合</h2>
         </div>
-        <div class="mode-switch" role="tablist" aria-label="工作路径">
-          <button type="button" role="tab" aria-selected="true" data-mode="calibration">双目标定</button>
-          <button type="button" role="tab" aria-selected="false" data-mode="reconstruction">三维重建</button>
-          <button type="button" role="tab" aria-selected="false" data-mode="single">单目主链</button>
+        <div class="mode-switch" role="tablist" aria-label="工作链路">
+          <button type="button" role="tab" aria-selected="true" data-mode="single">单目系统（相机-投影仪）</button>
+          <button type="button" role="tab" aria-selected="false" data-mode="stereo">双目系统（左右双相机）</button>
         </div>
       </div>
 
@@ -55,67 +54,158 @@
           <p class="stage-check"></p>
         </article>
       </div>
+
+      <p class="merge-note"><strong>汇合点：</strong>两条链路只在“如何把像素变成几何对应”上不同——单目靠<em>相机像素 ↔ 投影仪像素</em>，双目靠<em>左相机像素 ↔ 右相机像素</em>。得到对应关系之后，共享同一套 <code>三维重建.py</code>：N 步相移、三频外差、三角化、掩码过滤与 PLY 输出完全一致。</p>
     </section>
 
     <section class="ui-inspector" aria-labelledby="ui-title">
       <div class="section-copy">
         <p class="section-index">02 / 真实界面</p>
-        <h2 id="ui-title">代码中的桌面应用长什么样</h2>
-        <p>双目页截图来自仓库中的 PyQt5 程序；“单目主链”选项展示同一 v3.1 程序的单目标定页结构和对应的真实控件语义。</p>
+        <h2 id="ui-title">两个桌面应用，两条独立的 UI</h2>
+        <p>仓库里有两个独立的 PyQt5 程序：<code>结构光系统UI.py</code>（v3.1，单目）与 <code>双目结构光系统UI.py</code>（v4.1，双目）。下面是两个程序“标定页”和“三维重建页”的真实界面截图——单目标定页多出 <em>DLP 分辨率、相移步数、多频外差频率</em> 等投影仪相关配置，双目标定页则换成 <em>左右相机图像文件夹</em>；重建页两侧配置几乎一致，只差标定文件和左右条纹目录。</p>
       </div>
-      <figure class="ui-figure">
-        <img class="ui-image" src="./assets/真实界面-双目标定.png" alt="结构光三维重建系统的双目标定界面">
-        <div class="single-ui-preview" hidden>
-          <div class="single-ui-titlebar"><span>结构光三维重建系统 v3.1</span><span class="single-ui-status">单目相机-投影仪</span></div>
-          <div class="single-ui-tabs"><span class="is-active">单目标定</span><span>三维重建</span></div>
-          <div class="single-ui-body">
-            <div class="single-ui-form">
-              <label>标定图像目录<input value="标定数据/" readonly></label>
-              <label>输出标定文件<input value="./标定结果.txt" readonly></label>
-              <div class="single-ui-row"><label>相机尺寸<input value="2448 × 2048" readonly></label><label>DLP 尺寸<input value="1920 × 1080" readonly></label></div>
-              <div class="single-ui-row"><label>相移步数 N<input value="4" readonly></label><label>频率<input value="81, 72, 64" readonly></label></div>
-              <button type="button" class="single-ui-action">开始标定</button>
-            </div>
-            <div class="single-ui-preview-panel"><strong>可视化结果</strong><span>检测角点</span><span>水平绝对相位</span><span>垂直绝对相位</span><span>相机/投影仪重投影误差</span></div>
-          </div>
-        </div>
-        <figcaption>
-          <strong class="figure-title">双目标定</strong>
-          <span class="figure-caption">左侧配置输入与标定板，右侧查看角点或重投影误差。</span>
-        </figcaption>
-      </figure>
+      <div class="ui-gallery">
+        <figure class="ui-figure">
+          <img class="ui-image" src="./assets/真实界面-单目标定.png" alt="结构光系统UI的单目标定界面">
+          <figcaption>
+            <strong class="figure-title">单目系统 · 单目标定</strong>
+            <span class="figure-caption">结构光系统UI v3.1：配置数据文件夹、DLP 分辨率、标定位置数、相移步数 N 与频率 81/72/64。</span>
+          </figcaption>
+        </figure>
+        <figure class="ui-figure">
+          <img class="ui-image" src="./assets/真实界面-双目标定.png" alt="双目结构光系统UI的双目标定界面">
+          <figcaption>
+            <strong class="figure-title">双目系统 · 双目标定</strong>
+            <span class="figure-caption">双目结构光系统UI v4.1：配置左右相机图像文件夹与标定板参数，不需要 DLP 分辨率或条纹频率。</span>
+          </figcaption>
+        </figure>
+        <figure class="ui-figure">
+          <img class="ui-image" src="./assets/真实界面-单目重建.png" alt="结构光系统UI的三维重建界面">
+          <figcaption>
+            <strong class="figure-title">单目系统 · 三维重建</strong>
+            <span class="figure-caption">加载单目标定结果与一个条纹目录，配置深度范围、质量阈值、过滤参数。</span>
+          </figcaption>
+        </figure>
+        <figure class="ui-figure">
+          <img class="ui-image" src="./assets/真实界面-双目重建.png" alt="双目结构光系统UI的三维重建界面">
+          <figcaption>
+            <strong class="figure-title">双目系统 · 三维重建</strong>
+            <span class="figure-caption">加载双目标定结果与左右两个条纹目录，其余重建配置与单目一致。</span>
+          </figcaption>
+        </figure>
+      </div>
     </section>
 
-    <section class="pipeline" aria-labelledby="pipeline-title">
+    <section class="calibration-compare" aria-labelledby="compare-title">
       <div class="section-copy">
-        <p class="section-index">03 / 数据如何变化</p>
-        <h2 id="pipeline-title">单目主链与双目分支如何共用核心算法</h2>
+        <p class="section-index">03 / 标定为什么不同</p>
+        <h2 id="compare-title">投影仪不会“看”，双目却有两双眼睛</h2>
+        <p>两种标定都求解“成像设备对”的相对姿态，但获取对应点的方式完全不同。投影仪是输出设备，无法直接拍照：必须向标定板投射已知条纹，再用绝对相位把相机角点反算成 DLP 像素坐标，相当于把投影仪伪装成“逆相机”参与标定。双目系统里两个相机都能直接看到同一块标定板，各自检测角点即可，不需要条纹和相位。</p>
       </div>
-      <ol class="pipeline-list">
-        <li><span>01</span><strong>采集</strong><p>单目采集标定板与投影条纹；双目采集左右同步图像。</p></li>
-        <li><span>02</span><strong>标定</strong><p>单目求相机/投影仪参数；双目求左右相机相对位姿。</p></li>
-        <li><span>03</span><strong>包裹相位</strong><p>N 步相移消除背景亮度并得到周期内相位。</p></li>
-        <li><span>04</span><strong>绝对相位</strong><p>三频外差恢复条纹周期编号。</p></li>
-        <li><span>05</span><strong>有效掩码</strong><p>按调制度、强度和相位质量排除不可靠像素。</p></li>
-        <li><span>06</span><strong>像素对应</strong><p>单目把绝对相位映射到投影仪坐标；双目建立左右匹配。</p></li>
-        <li><span>07</span><strong>三角化</strong><p>用标定几何把像素对应转换成深度。</p></li>
-        <li><span>08</span><strong>点云输出</strong><p>深度裁剪与邻域过滤后写出 PLY。</p></li>
-      </ol>
+
+      <div class="compare-grid">
+        <section>
+          <h3>单目 · 相机-投影仪联合标定</h3>
+          <ol class="compare-steps">
+            <li><b>1</b><span>拍摄每个姿态的标定板图 + 水平/垂直条纹图，按 13 个位姿分组。</span></li>
+            <li><b>2</b><span>相机直接检测圆点/棋盘格角点，得到相机像素坐标。</span></li>
+            <li><b>3</b><span>用 N 步相移 + 三频外差恢复绝对相位，把每个相机角点插值映射到 DLP 像素坐标。</span></li>
+            <li><b>4</b><span>把投影仪当作逆向相机，与相机做 stereoCalibrate，求 <code>Kc、Kp、R、t、F</code>，并按投影仪重投影误差过滤坏点。</span></li>
+          </ol>
+          <p class="compare-note">代码：<code>结构光流程/相机投影仪的标定.py</code> → <code>CameraProjectorCalibration</code>；DLP 反投影误差 0.224 px。</p>
+        </section>
+        <section>
+          <h3>双目 · 左右相机标定</h3>
+          <ol class="compare-steps">
+            <li><b>1</b><span>左右相机同步拍摄同一组标定板姿态，左右目录文件一一对应。</span></li>
+            <li><b>2</b><span>左右分别做灰度翻转/归一化预处理并检测圆点，得到左右角点集。</span></li>
+            <li><b>3</b><span>先用每张图的单应性分别标定左右内参，再 stereoCalibrate 求相对 <code>R、t</code>。</span></li>
+            <li><b>4</b><span>输出左右内参/畸变、相对位姿、基础矩阵 F 与基线距离。</span></li>
+          </ol>
+          <p class="compare-note">代码：<code>双目结构光三维重建/双目相机标定.py</code> → <code>StereoCameraCalibration</code>；基线 112.24 mm。</p>
+        </section>
+      </div>
+
+      <div class="real-numbers">
+        <h3>两份真实标定结果对比</h3>
+        <div class="real-table-wrap">
+          <table>
+            <thead>
+              <tr><th>输出项</th><th>单目（相机-投影仪）</th><th>双目（左 / 右相机）</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>反投影误差</td><td>相机 0.251 px / DLP 0.224 px</td><td>左 0.072 px / 右 0.057 px</td></tr>
+              <tr><td>焦距 f (px)</td><td>相机 3710 / DLP 2042</td><td>左 1755 / 右 1878</td></tr>
+              <tr><td>相对姿态</td><td>R + t（相机-投影仪，平移约 352, -12, -285 mm）</td><td>R + t（右相对左，基线 112.24 mm）</td></tr>
+              <tr><td>基础矩阵 F</td><td>相机 ↔ DLP</td><td>左 ↔ 右</td></tr>
+              <tr><td>标定文件</td><td>标定结果.txt</td><td>双目标定结果.txt</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="real-note">以上数字来自仓库内两份真实运行输出，未做任何加工。</p>
+      </div>
+    </section>
+
+    <section class="results" aria-labelledby="results-title">
+      <div class="section-copy">
+        <p class="section-index">04 / 真实运行结果</p>
+        <h2 id="results-title">从条纹到点云：每一步都有真实产物</h2>
+        <p>以下图片来自 <code>E:\images\PSM\1</code> 的条纹采集与 <code>结构光代码</code> 的真实运行输出：24 张相移条纹（3 频率 × 4 步 × 水平/垂直）先解出包裹相位，再经三频外差展开为绝对相位，最后三角化得到深度与点云。</p>
+      </div>
+
+      <h3 class="results-group">① 输入条纹（水平 h1 / 垂直 v1，另有白光纹理图）</h3>
+      <div class="result-gallery">
+        <figure class="result-figure"><img src="./assets/结果-条纹-白光纹理.png" alt="白光纹理图"><figcaption>白光/纹理图（1.bmp）</figcaption></figure>
+        <figure class="result-figure"><img src="./assets/结果-条纹-水平h1.png" alt="水平条纹 h1"><figcaption>水平条纹 h1（频率 81 第 1 步）</figcaption></figure>
+        <figure class="result-figure"><img src="./assets/结果-条纹-垂直v1.png" alt="垂直条纹 v1"><figcaption>垂直条纹 v1（频率 81 第 1 步）</figcaption></figure>
+      </div>
+
+      <h3 class="results-group">② 相位解码：包裹相位 → 绝对相位</h3>
+      <div class="result-gallery">
+        <figure class="result-figure"><img src="./assets/结果-包裹相位-热力图.jpg" alt="包裹相位热力图"><figcaption>包裹相位（4 步相移解出，2π 周期跳变）</figcaption></figure>
+        <figure class="result-figure"><img src="./assets/结果-调制度图.jpg" alt="调制度图"><figcaption>调制度图（质量掩码输入）</figcaption></figure>
+        <figure class="result-figure"><img src="./assets/结果-绝对相位-水平.jpg" alt="水平绝对相位"><figcaption>绝对相位 · 水平（三频外差展开）</figcaption></figure>
+        <figure class="result-figure"><img src="./assets/结果-绝对相位-垂直.jpg" alt="垂直绝对相位"><figcaption>绝对相位 · 垂直（三频外差展开）</figcaption></figure>
+        <figure class="result-figure"><img src="./assets/结果-质量图.jpg" alt="质量图"><figcaption>有效点质量图（调制度/强度过滤）</figcaption></figure>
+      </div>
+
+      <h3 class="results-group">③ 重建输出：深度与点云</h3>
+      <div class="result-gallery">
+        <figure class="result-figure"><img src="./assets/结果-深度图.png" alt="深度图"><figcaption>深度图（相机坐标系 Z）</figcaption></figure>
+        <figure class="result-figure"><img src="./assets/结果-点云-正视.png" alt="点云正视图"><figcaption>点云正视图（pointCloud.ply，35.4 万点）</figcaption></figure>
+        <figure class="result-figure"><img src="./assets/结果-点云-斜视.png" alt="点云斜视图"><figcaption>点云斜视图（同一份 PLY）</figcaption></figure>
+      </div>
+
+      <h3 class="results-group">④ 标定诊断（单目系统）</h3>
+      <div class="result-gallery">
+        <figure class="result-figure"><img src="./assets/结果-标定误差-相机.png" alt="相机重投影误差"><figcaption>相机重投影误差分布</figcaption></figure>
+        <figure class="result-figure"><img src="./assets/结果-标定误差-投影仪.png" alt="投影仪重投影误差"><figcaption>投影仪（DLP）重投影误差分布</figcaption></figure>
+      </div>
     </section>
 
     <section class="evidence" aria-labelledby="evidence-title">
       <div>
-        <p class="section-index">04 / 证据边界</p>
+        <p class="section-index">05 / 证据边界</p>
         <h2 id="evidence-title">目前能展示什么，不能证明什么</h2>
       </div>
       <div class="evidence-columns">
         <section>
           <h3>已经核验</h3>
-          <ul><li>单目标定、相机-投影仪联合标定和单目重建的控件语义</li><li>双目标定与重建 UI 的真实控件和操作路径</li><li>多步相移、三频展开、三角化和三级过滤代码</li><li>标定文本、相位/深度诊断和 PLY 输出接口</li></ul>
+          <ul>
+            <li>两个真实 PyQt5 程序的界面截图（单目标定、双目标定、重建页）</li>
+            <li>相机-投影仪标定与双目相机标定的代码路径和真实输出文件</li>
+            <li>条纹图、包裹相位、绝对相位、质量图、深度图与点云均为真实运行产物</li>
+            <li>两份标定结果文本中的误差、焦距、相对位姿与基线数字</li>
+          </ul>
         </section>
         <section>
           <h3>页面边界</h3>
-          <ul><li>页面是静态讲解，不在浏览器中调用 PyQt5 或 OpenCV</li><li>单目界面结构依据仓库 v3.1 控件和使用说明整理</li><li>结果图用于阅读流程，不代表网页端实时推理</li></ul>
+          <ul>
+            <li>页面是静态讲解，不在浏览器中调用 PyQt5 或 OpenCV</li>
+            <li>点云为同一 PLY 的两个观察角度，不代表实时渲染</li>
+            <li>双目链路的条纹/相位结果暂缺原始文件，此处以单目完整链展示通用数据流</li>
+            <li>结果图仅用于阅读流程，不替代代码复现</li>
+          </ul>
         </section>
       </div>
     </section>
@@ -128,3 +218,4 @@
   <script src="./app.js"></script>
 </body>
 </html>
+
