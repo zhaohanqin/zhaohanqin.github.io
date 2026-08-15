@@ -35,7 +35,7 @@ categories: [视觉计算]
 
 ![货架多模型视觉检测流水线](/images/projects/shelf-vision-pipeline/shelf-vision-pipeline.png)
 
-*图 1：根据仓库代码与 README 重绘的流水线结构。它说明系统如何组织，不表示某次运行的实验效果。*
+*图 1：根据仓库代码与 README 重绘的流水线结构，箭头方向即数据流：`instances[]` 经定位码纠正进入关系匹配；YOLO 掩码进入异常检测；`anomaly{}` 与编号后的 `labels/relations[]` 汇入导出。它说明系统如何组织，不表示某次运行的实验效果。*
 
 ## 一、为什么是“多模型 + 规则”，而不是一个万能模型
 
