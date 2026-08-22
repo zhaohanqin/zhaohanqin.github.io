@@ -7,6 +7,9 @@ public/
 .deploy*/
 _multiconfig.yml
 
+# 博客发布内部台账（含本地路径与溯源记录，不进入公开仓库）
+/.project-blog/
+
 # 博客工作台（内部资料，不进入公开博客仓库）
 /docs/
 /knowledge-graphs/
